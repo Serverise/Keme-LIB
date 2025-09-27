@@ -11,6 +11,18 @@
     - Improved ColorPicker with modern rendering
     - Better error handling and compatibility
     
+    Usage Example:
+    local Library = require(path.to.KemeLib)
+    
+    local Window = Library:CreateWindow("My Window", Color3.fromRGB(255, 0, 0))
+    local Tab = Window:CreateTab("Main Tab")
+    local Groupbox = Tab:CreateGroupbox("My Groupbox", "Left")
+    
+    -- Now you can use CreateToggle on the Groupbox object:
+    local Toggle = Groupbox:CreateToggle("My Toggle", function(enabled)
+        print("Toggle state:", enabled)
+    end)
+    
     Note: Linter warnings about undefined globals (game, Instance, Color3, etc.) 
     are expected as these are Roblox-specific globals available at runtime.
 ]]
@@ -418,6 +430,11 @@ function Library:CreateWindow(title, color)
             function GroupTypes:CreateToggle(name, callback)
                 name = name or "New Toggle"
                 callback = callback or function(v) print(v) end
+                
+                -- Check if container_2 exists (should be created by CreateGroupbox)
+                if not container_2 then
+                    error("CreateToggle must be called on a Groupbox object created with CreateGroupbox()")
+                end
 
                 -- Toggle Main
                 local ToggleTypes = {}
@@ -505,6 +522,7 @@ function Library:CreateWindow(title, color)
 
                 function ToggleTypes:CreateKeyBind(def, callback)
                     def = def or "NONE"
+                    callback = callback or function(key) print(key) end
 
                     -- Keybind Main
                     local keytypes = {}
@@ -614,6 +632,11 @@ function Library:CreateWindow(title, color)
                 max = max or 100
                 def = def or 50
                 callback = callback or function(s) print(s) end
+                
+                -- Check if container_2 exists
+                if not container_2 then
+                    error("CreateSlider must be called on a Groupbox object created with CreateGroupbox()")
+                end
 
                 -- Slider Main
                 local SliderTypes = {}
