@@ -10,8 +10,8 @@ EXAMPLE:
 local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Serverise/Keme-LIB/refs/heads/main/Keme%20LIB.lua"))()
 local window = library.AddWindow({
     title = "My Script",
-    size = UDim2.new(0, 500, 0, 600),
-    position = UDim2.new(0, 100, 0, 100)
+    size = newUDim2(0, 500, 0, 600),
+    position = newUDim2(0, 100, 0, 100)
 })
 local tab = window:AddTab("Main")
 local section = tab:AddSection("Features")
@@ -750,7 +750,7 @@ function library:init()
         Parent = screenGui,
         Visible = true,
         Modal = true,
-        Size = UDim2.new(1,0,1,0),
+        Size = newUDim2(1,0,1,0),
         ZIndex = 9999999999,
         Transparency = 1;
     })
@@ -821,8 +821,8 @@ function library:init()
 
                 if library.CurrentTooltip ~= nil then
                     local mousePos = inputservice:GetMouseLocation()
-                    tooltipObjects.background.Position = UDim2.new(0,mousePos.X + 15,0,mousePos.Y + 15)
-                    tooltipObjects.background.Size = UDim2.new(0,tooltipObjects.text.TextBounds.X + 6 + (library.CurrentTooltip.risky and 60 or 0),0,tooltipObjects.text.TextBounds.Y + 2)
+                    tooltipObjects.background.Position = newUDim2(0,mousePos.X + 15,0,mousePos.Y + 15)
+                    tooltipObjects.background.Size = newUDim2(0,tooltipObjects.text.TextBounds.X + 6 + (library.CurrentTooltip.risky and 60 or 0),0,tooltipObjects.text.TextBounds.Y + 2)
                 end
 
                 local hoverObj = utility:GetHoverObject();
@@ -4567,6 +4567,9 @@ function library:init()
         return window;
     end
 
+    -- Add AddWindow as alias for NewWindow for better compatibility
+    self.AddWindow = self.NewWindow
+
     -- Tooltip
     do
         local z = library.zindexOrder.window + 2000;
@@ -4577,23 +4580,23 @@ function library:init()
         })
 
         tooltipObjects.border1 = utility:Draw('Square', {
-            Size = UDim2.new(1,2,1,2);
-            Position = UDim2.new(0,-1,0,-1);
+            Size = newUDim2(1,2,1,2);
+            Position = newUDim2(0,-1,0,-1);
             ThemeColor = 'Border 1';
             ZIndex = z-1;
             Parent = tooltipObjects.background;
         })
 
         tooltipObjects.border2 = utility:Draw('Square', {
-            Size = UDim2.new(1,4,1,4);
-            Position = UDim2.new(0,-2,0,-2);
+            Size = newUDim2(1,4,1,4);
+            Position = newUDim2(0,-2,0,-2);
             ThemeColor = 'Border 3';
             ZIndex = z-2;
             Parent = tooltipObjects.background;
         })
 
         tooltipObjects.text = utility:Draw('Text', {
-            Position = UDim2.new(0,3,0,0);
+            Position = newUDim2(0,3,0,0);
             ThemeColor = 'Primary Text';
             Size = 13;
             Font = 2;
@@ -4603,7 +4606,7 @@ function library:init()
         })
 
         tooltipObjects.riskytext = utility:Draw('Text', {
-            Position = UDim2.new(0,3,0,0);
+            Position = newUDim2(0,3,0,0);
             ThemeColor = 'Risky Text Enabled';
             Text = '[RISKY]';
             Size = 13;
@@ -4903,9 +4906,6 @@ function library:CreateSettingsTab(menu)
 
     return settingsTab;
 end
-
--- Add AddWindow as alias for NewWindow for better compatibility
-library.AddWindow = library.NewWindow
 
 getgenv().library = library
 return library
