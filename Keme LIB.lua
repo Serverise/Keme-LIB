@@ -2,6 +2,21 @@
 --[[
 Keme Lib - Advanced UI Library
 Developed by Keme Team
+
+USAGE:
+local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Serverise/Keme-LIB/refs/heads/main/Keme%20LIB.lua"))()
+
+EXAMPLE:
+local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Serverise/Keme-LIB/refs/heads/main/Keme%20LIB.lua"))()
+local window = library.AddWindow({
+    title = "My Script",
+    size = UDim2.new(0, 500, 0, 600),
+    position = UDim2.new(0, 100, 0, 100)
+})
+local tab = window:AddTab("Main")
+local section = tab:AddSection("Features")
+section:AddToggle({text = "Enable Feature", flag = "feature_enabled"})
+library:Init()
 ]]
 
 -- // Load
@@ -26,6 +41,55 @@ local localplayer = players.LocalPlayer
 
 local setByConfig = false
 local floor, ceil, huge, pi, clamp = math.floor, math.ceil, math.huge, math.pi, math.clamp
+
+-- Roblox LuaU compatibility fixes
+if not math.clamp then
+    math.clamp = function(value, min, max)
+        return math.max(min, math.min(max, value))
+    end
+end
+
+-- File system compatibility for Roblox LuaU
+if not makefolder then
+    makefolder = function(path)
+        -- Create folder if it doesn't exist
+        local success, err = pcall(function()
+            if not isfolder(path) then
+                makefolder(path)
+            end
+        end)
+    end
+end
+
+if not isfile then
+    isfile = function(path)
+        return pcall(function() readfile(path) end)
+    end
+end
+
+if not readfile then
+    readfile = function(path)
+        return ""
+    end
+end
+
+if not writefile then
+    writefile = function(path, content)
+        -- File writing not available
+    end
+end
+
+if not delfile then
+    delfile = function(path)
+        -- File deletion not available
+    end
+end
+
+if not listfiles then
+    listfiles = function(path)
+        return {}
+    end
+end
 local c3new, fromrgb, fromhsv = Color3.new, Color3.fromRGB, Color3.fromHSV
 local next, newInstance, newUDim2, newVector2 = next, Instance.new, UDim2.new, Vector2.new
 local isexecutorclosure = isexecutorclosure or is_synapse_function or is_sirhurt_closure or iskrnlclosure;
@@ -1803,7 +1867,7 @@ function library:init()
                                     if currentList.multi then
                                         for i,v in next, currentSelected do
                                             if v ~= "none" then
-                                                newSelected[i] = v;
+                                            newSelected[i] = v;
                                             end
                                         end
                                         if table.find(newSelected, val) then
@@ -4698,6 +4762,20 @@ function library:init()
 
 end
 
+-- Add Init method for Roblox LuaU compatibility
+function library:Init()
+    return self:init()
+end
+
+-- Add alternative initialization methods for Roblox LuaU
+function library:Initialize()
+    return self:init()
+end
+
+function library:Start()
+    return self:init()
+end
+
 function library:CreateSettingsTab(menu)
     local settingsTab = menu:AddTab('Settings', 999);
     
@@ -4737,7 +4815,7 @@ function library:CreateSettingsTab(menu)
 
     -- Config Management Section
     local configSection = settingsTab:AddSection('Config Management', 2);
-    
+
     configSection:AddBox({text = 'Config Name', flag = 'configinput'})
     configSection:AddList({text = 'Config', flag = 'selectedconfig'})
 
@@ -4825,6 +4903,9 @@ function library:CreateSettingsTab(menu)
 
     return settingsTab;
 end
+
+-- Add AddWindow as alias for NewWindow for better compatibility
+library.AddWindow = library.NewWindow
 
 getgenv().library = library
 return library
