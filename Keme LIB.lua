@@ -1329,7 +1329,7 @@ function library:Init(key)
 
             button.MouseButton1Click:Connect(function()
                 pcall(function()
-                    callback()
+                callback()
                 end)
             end)
 
@@ -1486,7 +1486,7 @@ function library:Init(key)
             --
             function ButtonFunctions:Fire()
                 pcall(function()
-                    callback()
+                callback()
                 end)
 
                 return ButtonFunctions
@@ -1745,7 +1745,7 @@ function library:Init(key)
                 TweenService:Create(toggleDesign, TweenTable["toggle_form"], {Size = SizeOn}):Play()
                 TweenService:Create(toggleDesign, TweenTable["toggle_form"], {BackgroundTransparency = Transparency}):Play()
                 pcall(function()
-                    callback(On)
+                callback(On)
                 end)
             end)
 
@@ -1773,7 +1773,7 @@ function library:Init(key)
                 TweenService:Create(toggleDesign, TweenTable["toggle_form"], {Size = SizeOn}):Play()
                 TweenService:Create(toggleDesign, TweenTable["toggle_form"], {BackgroundTransparency = Transparency}):Play()
                 pcall(function()
-                    callback(On)
+                callback(On)
                 end)
                 return ToggleFunctions
             end
@@ -1790,7 +1790,7 @@ function library:Init(key)
                 TweenService:Create(toggleDesign, TweenTable["toggle_form"], {Size = SizeOn}):Play()
                 TweenService:Create(toggleDesign, TweenTable["toggle_form"], {BackgroundTransparency = Transparency}):Play()
                 pcall(function()
-                    callback(On)
+                callback(On)
                 end)
                 return ToggleFunctions
             end
@@ -1880,7 +1880,7 @@ function library:Init(key)
                     Return = "enter"
                 }
     
-                keybindButtonLabel.Text = Shortcuts[default_t.Name] or default_t.Name
+                keybindButtonLabel.Text = Shortcuts[default_t.Name] or (default_t and default_t.Name or "P")
                 CreateTween("keybind", 0.08)
                 
                 local NewKeybindSize = TextService:GetTextSize(keybindButtonLabel.Text, keybindButtonLabel.TextSize, keybindButtonLabel.Font, Vector2.new(math.huge,math.huge))
@@ -1910,11 +1910,16 @@ function library:Init(key)
                     end
                 end)
     
-                local ChatTextBox = Player.PlayerGui.Chat.Frame.ChatBarParentFrame.Frame.BoxFrame.Frame.ChatBar
+                local ChatTextBox = nil
+                pcall(function()
+                    if Player.PlayerGui:FindFirstChild("Chat") then
+                        ChatTextBox = Player.PlayerGui.Chat.Frame.ChatBarParentFrame.Frame.BoxFrame.Frame.ChatBar
+                    end
+                end)
                 if UserInputService.WindowFocused then
                     UserInputService.InputBegan:Connect(function(c, p)
                         if not p then
-                            if c.KeyCode.Name == ChosenKey and not ChatTextBox:IsFocused() then
+                            if c.KeyCode.Name == ChosenKey and (not ChatTextBox or not ChatTextBox:IsFocused()) then
                                 On = not On
                                 local SizeOn = On and UDim2.new(0, 12, 0, 12) or UDim2.new(0, 0, 0, 0)
                                 local Transparency = On and 0 or 1
@@ -2144,11 +2149,16 @@ function library:Init(key)
                 end
             end)
 
-            local ChatTextBox = Player.PlayerGui.Chat.Frame.ChatBarParentFrame.Frame.BoxFrame.Frame.ChatBar
+            local ChatTextBox = nil
+            pcall(function()
+                if Player.PlayerGui:FindFirstChild("Chat") then
+                    ChatTextBox = Player.PlayerGui.Chat.Frame.ChatBarParentFrame.Frame.BoxFrame.Frame.ChatBar
+                end
+            end)
             if UserInputService.WindowFocused then
                 UserInputService.InputBegan:Connect(function(c, p)
                     if not p then
-                        if c.KeyCode.Name == ChosenKey and not ChatTextBox:IsFocused() then
+                        if c.KeyCode.Name == ChosenKey and (not ChatTextBox or not ChatTextBox:IsFocused()) then
                             callback(ChosenKey)
                             return
                         end
