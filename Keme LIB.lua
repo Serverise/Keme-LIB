@@ -3584,6 +3584,522 @@ function library:Init(key)
             return SeperatorFunctions
         end
         --
+        function Components:NewColorPicker(text, default, callback)
+            text = text or "Color Picker"
+            default = default or Color3.fromRGB(255, 255, 255)
+            callback = callback or function() end
+
+            local colorPickerFrame = Instance.new("Frame")
+            local colorPickerLayout = Instance.new("UIListLayout")
+            local colorPickerLabel = Instance.new("TextLabel")
+            local colorPickerPadding = Instance.new("UIPadding")
+            local colorPickerButton = Instance.new("TextButton")
+            local colorPickerButtonCorner = Instance.new("UICorner")
+            local colorPickerButtonBackground = Instance.new("Frame")
+            local colorPickerButtonBackgroundCorner = Instance.new("UICorner")
+            local colorPickerButtonGradient = Instance.new("UIGradient")
+            local colorPickerButtonLabel = Instance.new("TextLabel")
+            local colorPickerButtonLabelPadding = Instance.new("UIPadding")
+
+            colorPickerFrame.Name = "colorPickerFrame"
+            colorPickerFrame.Parent = page
+            colorPickerFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+            colorPickerFrame.BackgroundTransparency = 1.000
+            colorPickerFrame.Size = UDim2.new(0, 396, 0, 22)
+
+            colorPickerLayout.Name = "colorPickerLayout"
+            colorPickerLayout.Parent = colorPickerFrame
+            colorPickerLayout.FillDirection = Enum.FillDirection.Horizontal
+            colorPickerLayout.SortOrder = Enum.SortOrder.LayoutOrder
+            colorPickerLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+
+            colorPickerLabel.Name = "colorPickerLabel"
+            colorPickerLabel.Parent = colorPickerFrame
+            colorPickerLabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+            colorPickerLabel.BackgroundTransparency = 1.000
+            colorPickerLabel.Size = UDim2.new(0, 200, 0, 22)
+            colorPickerLabel.Font = Enum.Font.Code
+            colorPickerLabel.Text = text
+            colorPickerLabel.TextColor3 = Color3.fromRGB(190, 190, 190)
+            colorPickerLabel.TextSize = 14.000
+            colorPickerLabel.TextXAlignment = Enum.TextXAlignment.Left
+            colorPickerLabel.RichText = true
+
+            colorPickerPadding.Name = "colorPickerPadding"
+            colorPickerPadding.Parent = colorPickerLabel
+            colorPickerPadding.PaddingLeft = UDim.new(0, 6)
+
+            colorPickerButton.Name = "colorPickerButton"
+            colorPickerButton.Parent = colorPickerFrame
+            colorPickerButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+            colorPickerButton.Size = UDim2.new(0, 100, 0, 22)
+            colorPickerButton.AutoButtonColor = false
+            colorPickerButton.Font = Enum.Font.SourceSans
+            colorPickerButton.Text = ""
+            colorPickerButton.TextColor3 = Color3.fromRGB(0, 0, 0)
+            colorPickerButton.TextSize = 14.000
+
+            colorPickerButtonCorner.CornerRadius = UDim.new(0, 2)
+            colorPickerButtonCorner.Name = "colorPickerButtonCorner"
+            colorPickerButtonCorner.Parent = colorPickerButton
+
+            colorPickerButtonBackground.Name = "colorPickerButtonBackground"
+            colorPickerButtonBackground.Parent = colorPickerButton
+            colorPickerButtonBackground.AnchorPoint = Vector2.new(0.5, 0.5)
+            colorPickerButtonBackground.BackgroundColor3 = default
+            colorPickerButtonBackground.Position = UDim2.new(0.5, 0, 0.5, 0)
+            colorPickerButtonBackground.Size = UDim2.new(0, 98, 0, 20)
+
+            colorPickerButtonBackgroundCorner.CornerRadius = UDim.new(0, 2)
+            colorPickerButtonBackgroundCorner.Name = "colorPickerButtonBackgroundCorner"
+            colorPickerButtonBackgroundCorner.Parent = colorPickerButtonBackground
+
+            colorPickerButtonGradient.Color = ColorSequence.new{ColorSequenceKeypoint.new(0.00, Color3.fromRGB(34, 34, 34)), ColorSequenceKeypoint.new(1.00, Color3.fromRGB(28, 28, 28))}
+            colorPickerButtonGradient.Rotation = 90
+            colorPickerButtonGradient.Name = "colorPickerButtonGradient"
+            colorPickerButtonGradient.Parent = colorPickerButtonBackground
+
+            colorPickerButtonLabel.Name = "colorPickerButtonLabel"
+            colorPickerButtonLabel.Parent = colorPickerButtonBackground
+            colorPickerButtonLabel.AnchorPoint = Vector2.new(0.5, 0.5)
+            colorPickerButtonLabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+            colorPickerButtonLabel.BackgroundTransparency = 1.000
+            colorPickerButtonLabel.Position = UDim2.new(0.5, 0, 0.5, 0)
+            colorPickerButtonLabel.Size = UDim2.new(0, 98, 0, 20)
+            colorPickerButtonLabel.Font = Enum.Font.Code
+            colorPickerButtonLabel.Text = "Pick Color"
+            colorPickerButtonLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+            colorPickerButtonLabel.TextSize = 12.000
+            colorPickerButtonLabel.RichText = true
+
+            colorPickerButtonLabelPadding.Name = "colorPickerButtonLabelPadding"
+            colorPickerButtonLabelPadding.Parent = colorPickerButtonLabel
+            colorPickerButtonLabelPadding.PaddingLeft = UDim.new(0, 4)
+            colorPickerButtonLabelPadding.PaddingRight = UDim.new(0, 4)
+
+            -- Color Picker GUI
+            local colorPickerGui = nil
+            local currentColor = default
+
+            local function createColorPickerGui()
+                if colorPickerGui then
+                    colorPickerGui:Destroy()
+                end
+
+                colorPickerGui = library:CreateScreenGui("ColorPickerGui")
+                colorPickerGui.ResetOnSpawn = false
+
+                local mainFrame = Instance.new("Frame")
+                local mainFrameCorner = Instance.new("UICorner")
+                local mainFrameGradient = Instance.new("UIGradient")
+                local titleLabel = Instance.new("TextLabel")
+                local titlePadding = Instance.new("UIPadding")
+                local closeButton = Instance.new("TextButton")
+                local closeButtonCorner = Instance.new("UICorner")
+                local closeButtonLabel = Instance.new("TextLabel")
+
+                mainFrame.Name = "mainFrame"
+                mainFrame.Parent = colorPickerGui
+                mainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+                mainFrame.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+                mainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+                mainFrame.Size = UDim2.new(0, 300, 0, 200)
+
+                mainFrameCorner.CornerRadius = UDim.new(0, 4)
+                mainFrameCorner.Name = "mainFrameCorner"
+                mainFrameCorner.Parent = mainFrame
+
+                mainFrameGradient.Color = ColorSequence.new{ColorSequenceKeypoint.new(0.00, Color3.fromRGB(34, 34, 34)), ColorSequenceKeypoint.new(1.00, Color3.fromRGB(28, 28, 28))}
+                mainFrameGradient.Rotation = 90
+                mainFrameGradient.Name = "mainFrameGradient"
+                mainFrameGradient.Parent = mainFrame
+
+                titleLabel.Name = "titleLabel"
+                titleLabel.Parent = mainFrame
+                titleLabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+                titleLabel.BackgroundTransparency = 1.000
+                titleLabel.Size = UDim2.new(0, 250, 0, 30)
+                titleLabel.Font = Enum.Font.Code
+                titleLabel.Text = "Color Picker"
+                titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+                titleLabel.TextSize = 16.000
+                titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+                titleLabel.RichText = true
+
+                titlePadding.Name = "titlePadding"
+                titlePadding.Parent = titleLabel
+                titlePadding.PaddingLeft = UDim.new(0, 10)
+                titlePadding.PaddingTop = UDim.new(0, 5)
+
+                closeButton.Name = "closeButton"
+                closeButton.Parent = mainFrame
+                closeButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+                closeButton.Position = UDim2.new(0, 260, 0, 5)
+                closeButton.Size = UDim2.new(0, 30, 0, 20)
+                closeButton.AutoButtonColor = false
+                closeButton.Font = Enum.Font.SourceSans
+                closeButton.Text = ""
+                closeButton.TextColor3 = Color3.fromRGB(0, 0, 0)
+                closeButton.TextSize = 14.000
+
+                closeButtonCorner.CornerRadius = UDim.new(0, 2)
+                closeButtonCorner.Name = "closeButtonCorner"
+                closeButtonCorner.Parent = closeButton
+
+                closeButtonLabel.Name = "closeButtonLabel"
+                closeButtonLabel.Parent = closeButton
+                closeButtonLabel.AnchorPoint = Vector2.new(0.5, 0.5)
+                closeButtonLabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+                closeButtonLabel.BackgroundTransparency = 1.000
+                closeButtonLabel.Position = UDim2.new(0.5, 0, 0.5, 0)
+                closeButtonLabel.Size = UDim2.new(0, 30, 0, 20)
+                closeButtonLabel.Font = Enum.Font.Code
+                closeButtonLabel.Text = "×"
+                closeButtonLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+                closeButtonLabel.TextSize = 16.000
+
+                -- Color picker elements
+                local colorWheel = Instance.new("ImageLabel")
+                local colorWheelCorner = Instance.new("UICorner")
+                local colorWheelSelector = Instance.new("Frame")
+                local colorWheelSelectorCorner = Instance.new("UICorner")
+                local brightnessSlider = Instance.new("Frame")
+                local brightnessSliderCorner = Instance.new("UICorner")
+                local brightnessSliderGradient = Instance.new("UIGradient")
+                local brightnessSliderSelector = Instance.new("Frame")
+                local brightnessSliderSelectorCorner = Instance.new("UICorner")
+                local previewFrame = Instance.new("Frame")
+                local previewFrameCorner = Instance.new("UICorner")
+                local previewFrameGradient = Instance.new("UIGradient")
+                local rgbInputs = Instance.new("Frame")
+                local rgbInputsLayout = Instance.new("UIListLayout")
+                local rInput = Instance.new("TextBox")
+                local rInputCorner = Instance.new("UICorner")
+                local gInput = Instance.new("TextBox")
+                local gInputCorner = Instance.new("UICorner")
+                local bInput = Instance.new("TextBox")
+                local bInputCorner = Instance.new("UICorner")
+                local hexInput = Instance.new("TextBox")
+                local hexInputCorner = Instance.new("UICorner")
+                local applyButton = Instance.new("TextButton")
+                local applyButtonCorner = Instance.new("UICorner")
+                local applyButtonLabel = Instance.new("TextLabel")
+
+                -- Color wheel
+                colorWheel.Name = "colorWheel"
+                colorWheel.Parent = mainFrame
+                colorWheel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+                colorWheel.Position = UDim2.new(0, 10, 0, 40)
+                colorWheel.Size = UDim2.new(0, 100, 0, 100)
+                colorWheel.Image = "rbxasset://textures/ui/GuiImagePlaceholder.png"
+
+                colorWheelCorner.CornerRadius = UDim.new(0, 2)
+                colorWheelCorner.Name = "colorWheelCorner"
+                colorWheelCorner.Parent = colorWheel
+
+                colorWheelSelector.Name = "colorWheelSelector"
+                colorWheelSelector.Parent = colorWheel
+                colorWheelSelector.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+                colorWheelSelector.BorderSizePixel = 2
+                colorWheelSelector.Position = UDim2.new(0, 50, 0, 50)
+                colorWheelSelector.Size = UDim2.new(0, 8, 0, 8)
+
+                colorWheelSelectorCorner.CornerRadius = UDim.new(0, 4)
+                colorWheelSelectorCorner.Name = "colorWheelSelectorCorner"
+                colorWheelSelectorCorner.Parent = colorWheelSelector
+
+                -- Brightness slider
+                brightnessSlider.Name = "brightnessSlider"
+                brightnessSlider.Parent = mainFrame
+                brightnessSlider.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+                brightnessSlider.Position = UDim2.new(0, 120, 0, 40)
+                brightnessSlider.Size = UDim2.new(0, 20, 0, 100)
+
+                brightnessSliderCorner.CornerRadius = UDim.new(0, 2)
+                brightnessSliderCorner.Name = "brightnessSliderCorner"
+                brightnessSliderCorner.Parent = brightnessSlider
+
+                brightnessSliderGradient.Color = ColorSequence.new{ColorSequenceKeypoint.new(0.00, Color3.fromRGB(255, 255, 255)), ColorSequenceKeypoint.new(1.00, Color3.fromRGB(0, 0, 0))}
+                brightnessSliderGradient.Rotation = 90
+                brightnessSliderGradient.Name = "brightnessSliderGradient"
+                brightnessSliderGradient.Parent = brightnessSlider
+
+                brightnessSliderSelector.Name = "brightnessSliderSelector"
+                brightnessSliderSelector.Parent = brightnessSlider
+                brightnessSliderSelector.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+                brightnessSliderSelector.BorderSizePixel = 2
+                brightnessSliderSelector.Position = UDim2.new(0, -2, 0, 50)
+                brightnessSliderSelector.Size = UDim2.new(0, 24, 0, 4)
+
+                brightnessSliderSelectorCorner.CornerRadius = UDim.new(0, 2)
+                brightnessSliderSelectorCorner.Name = "brightnessSliderSelectorCorner"
+                brightnessSliderSelectorCorner.Parent = brightnessSliderSelector
+
+                -- Preview frame
+                previewFrame.Name = "previewFrame"
+                previewFrame.Parent = mainFrame
+                previewFrame.BackgroundColor3 = currentColor
+                previewFrame.Position = UDim2.new(0, 150, 0, 40)
+                previewFrame.Size = UDim2.new(0, 50, 0, 50)
+
+                previewFrameCorner.CornerRadius = UDim.new(0, 2)
+                previewFrameCorner.Name = "previewFrameCorner"
+                previewFrameCorner.Parent = previewFrame
+
+                previewFrameGradient.Color = ColorSequence.new{ColorSequenceKeypoint.new(0.00, Color3.fromRGB(34, 34, 34)), ColorSequenceKeypoint.new(1.00, Color3.fromRGB(28, 28, 28))}
+                previewFrameGradient.Rotation = 90
+                previewFrameGradient.Name = "previewFrameGradient"
+                previewFrameGradient.Parent = previewFrame
+
+                -- RGB inputs
+                rgbInputs.Name = "rgbInputs"
+                rgbInputs.Parent = mainFrame
+                rgbInputs.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+                rgbInputs.BackgroundTransparency = 1.000
+                rgbInputs.Position = UDim2.new(0, 10, 0, 150)
+                rgbInputs.Size = UDim2.new(0, 280, 0, 40)
+
+                rgbInputsLayout.Name = "rgbInputsLayout"
+                rgbInputsLayout.Parent = rgbInputs
+                rgbInputsLayout.FillDirection = Enum.FillDirection.Horizontal
+                rgbInputsLayout.SortOrder = Enum.SortOrder.LayoutOrder
+                rgbInputsLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+                rgbInputsLayout.Padding = UDim.new(0, 5)
+
+                -- R Input
+                rInput.Name = "rInput"
+                rInput.Parent = rgbInputs
+                rInput.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+                rInput.Position = UDim2.new(0, 0, 0, 0)
+                rInput.Size = UDim2.new(0, 60, 0, 20)
+                rInput.Font = Enum.Font.Code
+                rInput.PlaceholderColor3 = Color3.fromRGB(140, 140, 140)
+                rInput.PlaceholderText = "R"
+                rInput.Text = tostring(math.floor(currentColor.R * 255))
+                rInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+                rInput.TextSize = 12.000
+
+                rInputCorner.CornerRadius = UDim.new(0, 2)
+                rInputCorner.Name = "rInputCorner"
+                rInputCorner.Parent = rInput
+
+                -- G Input
+                gInput.Name = "gInput"
+                gInput.Parent = rgbInputs
+                gInput.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+                gInput.Position = UDim2.new(0, 70, 0, 0)
+                gInput.Size = UDim2.new(0, 60, 0, 20)
+                gInput.Font = Enum.Font.Code
+                gInput.PlaceholderColor3 = Color3.fromRGB(140, 140, 140)
+                gInput.PlaceholderText = "G"
+                gInput.Text = tostring(math.floor(currentColor.G * 255))
+                gInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+                gInput.TextSize = 12.000
+
+                gInputCorner.CornerRadius = UDim.new(0, 2)
+                gInputCorner.Name = "gInputCorner"
+                gInputCorner.Parent = gInput
+
+                -- B Input
+                bInput.Name = "bInput"
+                bInput.Parent = rgbInputs
+                bInput.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+                bInput.Position = UDim2.new(0, 140, 0, 0)
+                bInput.Size = UDim2.new(0, 60, 0, 20)
+                bInput.Font = Enum.Font.Code
+                bInput.PlaceholderColor3 = Color3.fromRGB(140, 140, 140)
+                bInput.PlaceholderText = "B"
+                bInput.Text = tostring(math.floor(currentColor.B * 255))
+                bInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+                bInput.TextSize = 12.000
+
+                bInputCorner.CornerRadius = UDim.new(0, 2)
+                bInputCorner.Name = "bInputCorner"
+                bInputCorner.Parent = bInput
+
+                -- Hex Input
+                hexInput.Name = "hexInput"
+                hexInput.Parent = rgbInputs
+                hexInput.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+                hexInput.Position = UDim2.new(0, 210, 0, 0)
+                hexInput.Size = UDim2.new(0, 60, 0, 20)
+                hexInput.Font = Enum.Font.Code
+                hexInput.PlaceholderColor3 = Color3.fromRGB(140, 140, 140)
+                hexInput.PlaceholderText = "HEX"
+                hexInput.Text = string.format("#%02X%02X%02X", math.floor(currentColor.R * 255), math.floor(currentColor.G * 255), math.floor(currentColor.B * 255))
+                hexInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+                hexInput.TextSize = 12.000
+
+                hexInputCorner.CornerRadius = UDim.new(0, 2)
+                hexInputCorner.Name = "hexInputCorner"
+                hexInputCorner.Parent = hexInput
+
+                -- Apply button
+                applyButton.Name = "applyButton"
+                applyButton.Parent = mainFrame
+                applyButton.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+                applyButton.Position = UDim2.new(0, 10, 0, 170)
+                applyButton.Size = UDim2.new(0, 280, 0, 25)
+                applyButton.AutoButtonColor = false
+                applyButton.Font = Enum.Font.SourceSans
+                applyButton.Text = ""
+                applyButton.TextColor3 = Color3.fromRGB(0, 0, 0)
+                applyButton.TextSize = 14.000
+
+                applyButtonCorner.CornerRadius = UDim.new(0, 2)
+                applyButtonCorner.Name = "applyButtonCorner"
+                applyButtonCorner.Parent = applyButton
+
+                applyButtonLabel.Name = "applyButtonLabel"
+                applyButtonLabel.Parent = applyButton
+                applyButtonLabel.AnchorPoint = Vector2.new(0.5, 0.5)
+                applyButtonLabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+                applyButtonLabel.BackgroundTransparency = 1.000
+                applyButtonLabel.Position = UDim2.new(0.5, 0, 0.5, 0)
+                applyButtonLabel.Size = UDim2.new(0, 280, 0, 25)
+                applyButtonLabel.Font = Enum.Font.Code
+                applyButtonLabel.Text = "Apply Color"
+                applyButtonLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+                applyButtonLabel.TextSize = 14.000
+
+                -- Functions
+                local function updateColor()
+                    previewFrame.BackgroundColor3 = currentColor
+                    colorPickerButtonBackground.BackgroundColor3 = currentColor
+                    rInput.Text = tostring(math.floor(currentColor.R * 255))
+                    gInput.Text = tostring(math.floor(currentColor.G * 255))
+                    bInput.Text = tostring(math.floor(currentColor.B * 255))
+                    hexInput.Text = string.format("#%02X%02X%02X", math.floor(currentColor.R * 255), math.floor(currentColor.G * 255), math.floor(currentColor.B * 255))
+                end
+
+                local function setColorFromRGB(r, g, b)
+                    currentColor = Color3.fromRGB(math.clamp(r, 0, 255), math.clamp(g, 0, 255), math.clamp(b, 0, 255))
+                    updateColor()
+                end
+
+                local function setColorFromHex(hex)
+                    hex = hex:gsub("#", "")
+                    if #hex == 6 then
+                        local r = tonumber(hex:sub(1, 2), 16)
+                        local g = tonumber(hex:sub(3, 4), 16)
+                        local b = tonumber(hex:sub(5, 6), 16)
+                        if r and g and b then
+                            setColorFromRGB(r, g, b)
+                        end
+                    end
+                end
+
+                -- Event connections
+                closeButton.MouseButton1Click:Connect(function()
+                    colorPickerGui:Destroy()
+                    colorPickerGui = nil
+                end)
+
+                applyButton.MouseButton1Click:Connect(function()
+                    pcall(function()
+                        callback(currentColor)
+                    end)
+                    colorPickerGui:Destroy()
+                    colorPickerGui = nil
+                end)
+
+                rInput.FocusLost:Connect(function()
+                    local value = tonumber(rInput.Text)
+                    if value then
+                        setColorFromRGB(value, tonumber(gInput.Text) or 0, tonumber(bInput.Text) or 0)
+                    end
+                end)
+
+                gInput.FocusLost:Connect(function()
+                    local value = tonumber(gInput.Text)
+                    if value then
+                        setColorFromRGB(tonumber(rInput.Text) or 0, value, tonumber(bInput.Text) or 0)
+                    end
+                end)
+
+                bInput.FocusLost:Connect(function()
+                    local value = tonumber(bInput.Text)
+                    if value then
+                        setColorFromRGB(tonumber(rInput.Text) or 0, tonumber(gInput.Text) or 0, value)
+                    end
+                end)
+
+                hexInput.FocusLost:Connect(function()
+                    setColorFromHex(hexInput.Text)
+                end)
+
+                -- Simple color wheel interaction (placeholder)
+                colorWheel.MouseButton1Click:Connect(function()
+                    -- Simple random color for demonstration
+                    currentColor = Color3.fromRGB(math.random(0, 255), math.random(0, 255), math.random(0, 255))
+                    updateColor()
+                end)
+
+                -- Brightness slider interaction
+                brightnessSlider.MouseButton1Click:Connect(function()
+                    -- Simple brightness adjustment
+                    local brightness = math.random(0, 100) / 100
+                    currentColor = Color3.fromRGB(
+                        math.floor(currentColor.R * 255 * brightness),
+                        math.floor(currentColor.G * 255 * brightness),
+                        math.floor(currentColor.B * 255 * brightness)
+                    )
+                    updateColor()
+                end)
+            end
+
+            colorPickerButton.MouseButton1Click:Connect(function()
+                createColorPickerGui()
+            end)
+
+            colorPickerButton.MouseEnter:Connect(function()
+                TweenService:Create(colorPickerButton, TweenTable["hover"], {BackgroundColor3 = Color3.fromRGB(60, 60, 60)}):Play()
+            end)
+
+            colorPickerButton.MouseLeave:Connect(function()
+                TweenService:Create(colorPickerButton, TweenTable["hover"], {BackgroundColor3 = Color3.fromRGB(50, 50, 50)}):Play()
+            end)
+
+            UpdatePageSize()
+
+            local ColorPickerFunctions = {}
+            function ColorPickerFunctions:SetColor(color)
+                color = color or Color3.fromRGB(255, 255, 255)
+                currentColor = color
+                colorPickerButtonBackground.BackgroundColor3 = color
+                return ColorPickerFunctions
+            end
+            --
+            function ColorPickerFunctions:GetColor()
+                return currentColor
+            end
+            --
+            function ColorPickerFunctions:Hide()
+                colorPickerFrame.Visible = false
+                return ColorPickerFunctions
+            end
+            --
+            function ColorPickerFunctions:Show()
+                colorPickerFrame.Visible = true
+                return ColorPickerFunctions
+            end
+            --
+            function ColorPickerFunctions:Remove()
+                colorPickerFrame:Destroy()
+                if colorPickerGui then
+                    colorPickerGui:Destroy()
+                end
+                return ColorPickerFunctions
+            end
+            --
+            function ColorPickerFunctions:Text(new)
+                new = new or text
+                colorPickerLabel.Text = new
+                return ColorPickerFunctions
+            end
+            return ColorPickerFunctions
+        end
+        --
         function Components:Open()
             TabLibrary.CurrentTab = title
             for i,v in pairs(container:GetChildren()) do 
