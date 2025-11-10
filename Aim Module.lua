@@ -1,6 +1,6 @@
 local AimbotModule = {}
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunSystem")
+local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 local Camera = Workspace.CurrentCamera
@@ -79,10 +79,9 @@ local function AimAtTarget()
     local smoothFactor = 1 - AimbotModule.Settings.Sensitivity
     local newPosition = screenCenter + difference * smoothFactor
     if UserInputService.TouchEnabled then
-        game:GetService("StarterGui"):SetCore("ChatMakeSystemMessage", {Text = "Touch device detected, mouse movement disabled"})
-    else
-        game:GetService("UserInputService"):SetMousePosition(newPosition.X, newPosition.Y)
+        return
     end
+    game:GetService("UserInputService"):SetMousePosition(newPosition.X, newPosition.Y)
 end
 local function UpdateFOV()
     FOV.Position = UserInputService:GetMouseLocation()
