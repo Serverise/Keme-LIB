@@ -78,10 +78,12 @@ local function AimAtTarget()
     local difference = targetScreenPosition - screenCenter
     local smoothFactor = 1 - AimbotModule.Settings.Sensitivity
     if AimbotModule.Settings.Sensitivity == 0 then
-        game:GetService("UserInputService"):SetMousePosition(targetScreenPosition)
+        local delta = difference * 0.01
+        game:GetService("UserInputService"):SetMouseDelta(delta)
     else
         local newPosition = screenCenter + difference * smoothFactor
-        game:GetService("UserInputService"):SetMousePosition(newPosition)
+        local delta = (newPosition - UserInputService:GetMouseLocation()) * 0.01
+        game:GetService("UserInputService"):SetMouseDelta(delta)
     end
 end
 local function UpdateFOV()
