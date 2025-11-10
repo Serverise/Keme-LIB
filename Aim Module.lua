@@ -1,6 +1,6 @@
 local AimbotModule = {}
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
+local RunService = game:GetService("RunSystem")
 local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 local Camera = Workspace.CurrentCamera
@@ -77,13 +77,11 @@ local function AimAtTarget()
     local targetScreenPosition = Vector2.new(targetPosition.X, targetPosition.Y)
     local difference = targetScreenPosition - screenCenter
     local smoothFactor = 1 - AimbotModule.Settings.Sensitivity
-    if AimbotModule.Settings.Sensitivity == 0 then
-        local delta = difference * 0.01
-        game:GetService("UserInputService"):SetMouseDelta(delta)
+    local newPosition = screenCenter + difference * smoothFactor
+    if UserInputService.TouchEnabled then
+        game:GetService("StarterGui"):SetCore("ChatMakeSystemMessage", {Text = "Touch device detected, mouse movement disabled"})
     else
-        local newPosition = screenCenter + difference * smoothFactor
-        local delta = (newPosition - UserInputService:GetMouseLocation()) * 0.01
-        game:GetService("UserInputService"):SetMouseDelta(delta)
+        game:GetService("UserInputService"):SetMousePosition(newPosition.X, newPosition.Y)
     end
 end
 local function UpdateFOV()
@@ -128,13 +126,13 @@ function AimbotModule:Stop()
 end
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
-    if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == AimbotModule.Settings.TriggerKey then
+    if input.KeyCode == AimbotModule.Settings.TriggerKey then
         Aiming = true
     end
 end)
 UserInputService.InputEnded:Connect(function(input, gameProcessed)
     if gameProcessed then return end
-    if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == AimbotModule.Settings.TriggerKey then
+    if input.KeyCode == AimbotModule.Settings.TriggerKey then
         Aiming = false
     end
 end)
