@@ -1,24 +1,27 @@
 local AimModule = {}
 
-local pcall, next, Vector2new, CFramenew, Color3fromRGB, Drawingnew, TweenInfonew, mousemoverel = pcall, next,
-    Vector2.new, CFrame.new, Color3.fromRGB, Drawing.new, TweenInfo.new, mousemoverel or (Input and Input.MouseMove)
-
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local Camera = workspace.CurrentCamera
+local Workspace = game:GetService("Workspace")
 
-local Typing, Running, ServiceConnections, Animation, OriginalSensitivity = false, false, {}, nil, nil
+local LocalPlayer = Players.LocalPlayer
+local Camera = Workspace.CurrentCamera
+
+local Typing = false
+local Running = false
+local ServiceConnections = {}
+local Animation = nil
+local OriginalSensitivity = nil
 local LockedPlayer = nil
 
-local FOVCircle = Drawingnew("Circle")
+local FOVCircle = Drawing.new("Circle")
 FOVCircle.Visible = false
 FOVCircle.Filled = false
 FOVCircle.Transparency = 1
 FOVCircle.Thickness = 1
-FOVCircle.Color = Color3fromRGB(255, 255, 255)
+FOVCircle.Color = Color3.fromRGB(255, 255, 255)
 FOVCircle.NumSides = 60
 
 AimModule.Settings = {
@@ -29,26 +32,23 @@ AimModule.Settings = {
     Sensitivity = 0,
     ThirdPerson = false,
     ThirdPersonSensitivity = 3,
-    TriggerKey = Enum.UserInputType.MouseButton2,
+    TriggerKey = nil,
     Toggle = false,
     LockPart = "Head",
     FOVVisible = false,
     FOVSize = 90,
-    FOVColor = Color3fromRGB(255, 255, 255),
-    FOVLockColor = Color3fromRGB(255, 70, 70),
+    FOVColor = Color3.fromRGB(255, 255, 255),
+    FOVLockColor = Color3.fromRGB(255, 70, 70),
     FOVTransparency = 0.5,
     FOVThickness = 1,
     FOVSides = 60,
     FOVFilled = false
 }
 
-local function ConvertVector(Vector)
-    return Vector2new(Vector.X, Vector.Y)
-end
-
 local function CancelLock()
     LockedPlayer = nil
     FOVCircle.Color = AimModule.Settings.FOVColor
+    
     if OriginalSensitivity then
         UserInputService.MouseDeltaSensitivity = OriginalSensitivity
     end
@@ -59,96 +59,122 @@ local function CancelLock()
     end
 end
 
+local function IsPlayerValid(player)
+    if not player or player == LocalPlayer then return false end
+    if not player.Character then return false end
+    
+    local lockPart = player.Character:FindFirstChild(AimModule.Settings.LockPart)
+    if not lockPart then return false end
+    
+    local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+    if not humanoid then return false end
+    
+    if AimModule.Settings.AliveCheck and humanoid.Health <= 0 then return false end
+    
+    if AimModule.Settings.TeamCheck then
+        if player.Team and LocalPlayer.Team and player.Team == LocalPlayer.Team then
+            return false
+        end
+    end
+    
+    return true
+end
+
+local function IsWallBetween(targetPos)
+    if not AimModule.Settings.WallCheck then return false end
+    
+    local origin = Camera.CFrame.Position
+    local direction = (targetPos - origin)
+    
+    local rayParams = RaycastParams.new()
+    rayParams.FilterType = Enum.RaycastFilterType.Blacklist
+    rayParams.FilterDescendantsInstances = {LocalPlayer.Character}
+    
+    local result = Workspace:Raycast(origin, direction, rayParams)
+    
+    if result then
+        local hitPlayer = Players:GetPlayerFromCharacter(result.Instance.Parent)
+        if not hitPlayer then
+            return true
+        end
+    end
+    
+    return false
+end
+
 local function GetClosestPlayer()
-    if not LockedPlayer then
-        local RequiredDistance = AimModule.Settings.FOVSize
-        local ClosestPlayer = nil
-
-        for _, v in next, Players:GetPlayers() do
-            if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild(AimModule.Settings.LockPart) and v.Character:FindFirstChildOfClass("Humanoid") then
-                if AimModule.Settings.TeamCheck and v.Team == LocalPlayer.Team then continue end
-                if AimModule.Settings.AliveCheck and v.Character:FindFirstChildOfClass("Humanoid").Health <= 0 then continue end
-                if AimModule.Settings.WallCheck then
-                    local rayParams = RaycastParams.new()
-                    rayParams.FilterDescendantsInstances = { LocalPlayer.Character, v.Character }
-                    rayParams.FilterType = Enum.RaycastFilterType.Blacklist
-                    local origin = Camera.CFrame.Position
-                    local direction = (v.Character[AimModule.Settings.LockPart].Position - origin).Unit * 1000
-                    local rayResult = workspace:Raycast(origin, direction, rayParams)
-                    if rayResult then continue end
-                end
-
-                local Vector, OnScreen = Camera:WorldToViewportPoint(v.Character[AimModule.Settings.LockPart].Position)
-                Vector = ConvertVector(Vector)
-                local Distance = (UserInputService:GetMouseLocation() - Vector).Magnitude
-
-                if Distance < RequiredDistance and OnScreen then
-                    RequiredDistance = Distance
-                    ClosestPlayer = v
-                end
-            end
-        end
-
-        LockedPlayer = ClosestPlayer
-    elseif LockedPlayer then
-        if not LockedPlayer.Character or not LockedPlayer.Character:FindFirstChild(AimModule.Settings.LockPart) or not LockedPlayer.Character:FindFirstChildOfClass("Humanoid") or LockedPlayer.Character:FindFirstChildOfClass("Humanoid").Health <= 0 then
+    if LockedPlayer then
+        if not IsPlayerValid(LockedPlayer) then
             CancelLock()
             return
         end
-
-        local Vector, OnScreen = Camera:WorldToViewportPoint(LockedPlayer.Character[AimModule.Settings.LockPart]
-        .Position)
-        if not OnScreen then
+        
+        local lockPart = LockedPlayer.Character[AimModule.Settings.LockPart]
+        local screenPos, onScreen = Camera:WorldToViewportPoint(lockPart.Position)
+        
+        if not onScreen or screenPos.Z <= 0 then
             CancelLock()
             return
         end
-
-        local Distance = (UserInputService:GetMouseLocation() - ConvertVector(Vector)).Magnitude
-        if Distance > AimModule.Settings.FOVSize then
+        
+        if IsWallBetween(lockPart.Position) then
+            CancelLock()
+            return
+        end
+        
+        local mousePos = UserInputService:GetMouseLocation()
+        local distance = (Vector2.new(screenPos.X, screenPos.Y) - mousePos).Magnitude
+        
+        if distance > AimModule.Settings.FOVSize * 2 then
             CancelLock()
         end
+        
+        return
     end
-end
-
-local function ParseTriggerKey(key)
-    if typeof(key) == "EnumItem" then
-        return key
-    end
-
-    if typeof(key) == "string" then
-        local success, enumValue = pcall(function()
-            if key:find("MouseButton") then
-                return Enum.UserInputType[key]
-            else
-                return Enum.KeyCode[key]
+    
+    local closestPlayer = nil
+    local shortestDistance = AimModule.Settings.FOVSize
+    
+    for _, player in ipairs(Players:GetPlayers()) do
+        if IsPlayerValid(player) then
+            local lockPart = player.Character[AimModule.Settings.LockPart]
+            
+            if IsWallBetween(lockPart.Position) then
+                continue
             end
-        end)
-        if success and enumValue then
-            return enumValue
+            
+            local screenPos, onScreen = Camera:WorldToViewportPoint(lockPart.Position)
+            
+            if onScreen and screenPos.Z > 0 then
+                local mousePos = UserInputService:GetMouseLocation()
+                local distance = (Vector2.new(screenPos.X, screenPos.Y) - mousePos).Magnitude
+                
+                if distance < shortestDistance then
+                    shortestDistance = distance
+                    closestPlayer = player
+                end
+            end
         end
     end
-
-    return nil
+    
+    LockedPlayer = closestPlayer
 end
 
-local function OnInputBegan(Input, GameProcessed)
-    if GameProcessed or Typing or not AimModule.Settings.Enabled or not AimModule.Settings.TriggerKey then return end
-
+local function OnInputBegan(input, gameProcessed)
+    if gameProcessed or Typing or not AimModule.Settings.Enabled or not AimModule.Settings.TriggerKey then 
+        return 
+    end
+    
     local isCorrectInput = false
-    local triggerKey = ParseTriggerKey(AimModule.Settings.TriggerKey)
-
-    if not triggerKey then return end
-
-    if triggerKey.EnumType == Enum.KeyCode then
-        if Input.KeyCode == triggerKey then
-            isCorrectInput = true
-        end
-    elseif triggerKey.EnumType == Enum.UserInputType then
-        if Input.UserInputType == triggerKey then
-            isCorrectInput = true
+    
+    if typeof(AimModule.Settings.TriggerKey) == "EnumItem" then
+        if AimModule.Settings.TriggerKey.EnumType == Enum.KeyCode then
+            isCorrectInput = input.KeyCode == AimModule.Settings.TriggerKey
+        elseif AimModule.Settings.TriggerKey.EnumType == Enum.UserInputType then
+            isCorrectInput = input.UserInputType == AimModule.Settings.TriggerKey
         end
     end
-
+    
     if isCorrectInput then
         if AimModule.Settings.Toggle then
             Running = not Running
@@ -161,24 +187,21 @@ local function OnInputBegan(Input, GameProcessed)
     end
 end
 
-local function OnInputEnded(Input, GameProcessed)
-    if GameProcessed or Typing or not AimModule.Settings.TriggerKey or AimModule.Settings.Toggle then return end
-
+local function OnInputEnded(input, gameProcessed)
+    if gameProcessed or Typing or not AimModule.Settings.TriggerKey or AimModule.Settings.Toggle then 
+        return 
+    end
+    
     local isCorrectInput = false
-    local triggerKey = ParseTriggerKey(AimModule.Settings.TriggerKey)
-
-    if not triggerKey then return end
-
-    if triggerKey.EnumType == Enum.KeyCode then
-        if Input.KeyCode == triggerKey then
-            isCorrectInput = true
-        end
-    elseif triggerKey.EnumType == Enum.UserInputType then
-        if Input.UserInputType == triggerKey then
-            isCorrectInput = true
+    
+    if typeof(AimModule.Settings.TriggerKey) == "EnumItem" then
+        if AimModule.Settings.TriggerKey.EnumType == Enum.KeyCode then
+            isCorrectInput = input.KeyCode == AimModule.Settings.TriggerKey
+        elseif AimModule.Settings.TriggerKey.EnumType == Enum.UserInputType then
+            isCorrectInput = input.UserInputType == AimModule.Settings.TriggerKey
         end
     end
-
+    
     if isCorrectInput then
         Running = false
         CancelLock()
@@ -187,69 +210,78 @@ end
 
 function AimModule:Start()
     if ServiceConnections.RenderSteppedConnection then return end
-
+    
     OriginalSensitivity = UserInputService.MouseDeltaSensitivity
-
-    if not AimModule.Settings.TriggerKey or AimModule.Settings.TriggerKey == "" then
-        AimModule.Settings.TriggerKey = Enum.UserInputType.MouseButton2
-    end
-
+    
     ServiceConnections.RenderSteppedConnection = RunService.RenderStepped:Connect(function()
-        if AimModule.Settings.FOVVisible and AimModule.Settings.Enabled then
-            FOVCircle.Radius = AimModule.Settings.FOVSize
-            FOVCircle.Thickness = AimModule.Settings.FOVThickness
-            FOVCircle.Filled = AimModule.Settings.FOVFilled
-            FOVCircle.NumSides = AimModule.Settings.FOVSides
-            FOVCircle.Transparency = AimModule.Settings.FOVTransparency
-            FOVCircle.Visible = true
-            FOVCircle.Position = Vector2new(UserInputService:GetMouseLocation().X, UserInputService:GetMouseLocation().Y)
-
-            if LockedPlayer then
-                FOVCircle.Color = AimModule.Settings.FOVLockColor
-            else
-                FOVCircle.Color = AimModule.Settings.FOVColor
-            end
-        else
-            FOVCircle.Visible = false
-        end
-
-        if Running and AimModule.Settings.Enabled then
-            GetClosestPlayer()
-
-            if LockedPlayer and LockedPlayer.Character and LockedPlayer.Character:FindFirstChild(AimModule.Settings.LockPart) then
-                if AimModule.Settings.ThirdPerson then
-                    local Vector = Camera:WorldToViewportPoint(LockedPlayer.Character[AimModule.Settings.LockPart]
-                    .Position)
-                    if mousemoverel then
-                        mousemoverel(
-                        (Vector.X - UserInputService:GetMouseLocation().X) * AimModule.Settings.ThirdPersonSensitivity,
-                            (Vector.Y - UserInputService:GetMouseLocation().Y) *
-                            AimModule.Settings.ThirdPersonSensitivity)
-                    end
+        pcall(function()
+            if AimModule.Settings.FOVVisible and AimModule.Settings.Enabled then
+                FOVCircle.Radius = AimModule.Settings.FOVSize
+                FOVCircle.Thickness = AimModule.Settings.FOVThickness
+                FOVCircle.Filled = AimModule.Settings.FOVFilled
+                FOVCircle.NumSides = AimModule.Settings.FOVSides
+                FOVCircle.Transparency = AimModule.Settings.FOVTransparency
+                FOVCircle.Visible = true
+                
+                local mousePos = UserInputService:GetMouseLocation()
+                FOVCircle.Position = Vector2.new(mousePos.X, mousePos.Y)
+                
+                if LockedPlayer then
+                    FOVCircle.Color = AimModule.Settings.FOVLockColor
                 else
-                    if AimModule.Settings.Sensitivity > 0 then
-                        if Animation then
-                            Animation:Cancel()
-                        end
-                        Animation = TweenService:Create(Camera,
-                            TweenInfonew(AimModule.Settings.Sensitivity, Enum.EasingStyle.Sine, Enum.EasingDirection.Out),
-                            { CFrame = CFramenew(Camera.CFrame.Position,
-                                LockedPlayer.Character[AimModule.Settings.LockPart].Position) })
-                        Animation:Play()
-                    else
-                        Camera.CFrame = CFramenew(Camera.CFrame.Position,
-                            LockedPlayer.Character[AimModule.Settings.LockPart].Position)
-                    end
+                    FOVCircle.Color = AimModule.Settings.FOVColor
+                end
+            else
+                FOVCircle.Visible = false
+            end
 
-                    UserInputService.MouseDeltaSensitivity = 0
+            if Running and AimModule.Settings.Enabled then
+                GetClosestPlayer()
+
+                if LockedPlayer and LockedPlayer.Character then
+                    local lockPart = LockedPlayer.Character:FindFirstChild(AimModule.Settings.LockPart)
+                    
+                    if lockPart then
+                        if AimModule.Settings.ThirdPerson then
+                            local screenPos = Camera:WorldToViewportPoint(lockPart.Position)
+                            local mousePos = UserInputService:GetMouseLocation()
+                            
+                            if mousemoverel then
+                                local deltaX = (screenPos.X - mousePos.X) * AimModule.Settings.ThirdPersonSensitivity
+                                local deltaY = (screenPos.Y - mousePos.Y) * AimModule.Settings.ThirdPersonSensitivity
+                                mousemoverel(deltaX, deltaY)
+                            end
+                        else
+                            local targetCFrame = CFrame.new(Camera.CFrame.Position, lockPart.Position)
+                            
+                            if AimModule.Settings.Sensitivity > 0 then
+                                if Animation then
+                                    Animation:Cancel()
+                                end
+                                
+                                local tweenInfo = TweenInfo.new(
+                                    AimModule.Settings.Sensitivity,
+                                    Enum.EasingStyle.Sine,
+                                    Enum.EasingDirection.Out
+                                )
+                                
+                                Animation = TweenService:Create(Camera, tweenInfo, {CFrame = targetCFrame})
+                                Animation:Play()
+                            else
+                                Camera.CFrame = targetCFrame
+                            end
+
+                            UserInputService.MouseDeltaSensitivity = 0
+                        end
+                    end
                 end
             end
-        end
+        end)
     end)
 
     ServiceConnections.InputBeganConnection = UserInputService.InputBegan:Connect(OnInputBegan)
     ServiceConnections.InputEndedConnection = UserInputService.InputEnded:Connect(OnInputEnded)
-
+    
     ServiceConnections.TypingStartedConnection = UserInputService.TextBoxFocused:Connect(function()
         Typing = true
     end)
@@ -260,12 +292,14 @@ function AimModule:Start()
 end
 
 function AimModule:Stop()
-    for _, v in next, ServiceConnections do
-        v:Disconnect()
+    for _, connection in pairs(ServiceConnections) do
+        pcall(function()
+            connection:Disconnect()
+        end)
     end
-
+    
     ServiceConnections = {}
-
+    
     FOVCircle.Visible = false
     Running = false
     CancelLock()
