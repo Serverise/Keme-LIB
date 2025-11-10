@@ -1,62 +1,66 @@
 local AimModule = {}
 
-local Players = game:GetService("Players")
+local pcall, next, Vector2new, CFramenew, Color3fromRGB, Drawingnew, TweenInfonew, stringupper, mousemoverel = pcall, next, Vector2.new, CFrame.new, Color3.fromRGB, Drawing.new, TweenInfo.new, string.upper, mousemoverel or (Input and Input.MouseMove)
+
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
-local Camera = workspace.CurrentCamera
+local TweenService = game:GetService("TweenService")
+local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
 
-local FOVCircle = Drawing.new("Circle")
-FOVCircle.Visible = false
-FOVCircle.Filled = false
-FOVCircle.Transparency = 1
-FOVCircle.Thickness = 1
-FOVCircle.Color = Color3.fromRGB(255, 255, 255)
-FOVCircle.NumSides = 64
-
+local RequiredDistance, Typing, Running, ServiceConnections, Animation, OriginalSensitivity = 2000, false, false, {}, nil, nil
 local LockedPlayer = nil
-local AimbotConnection = nil
-local FOVUpdateConnection = nil
-local IsBindActive = false
+
+local FOVCircle = Drawingnew("Circle")
+FOVCircle.Visible = false
 
 AimModule.Settings = {
     Enabled = false,
-    ActivateBind = nil,
-    AimPart = "Head",
-    Smoothness = 1,
     TeamCheck = false,
     AliveCheck = true,
     WallCheck = false,
+    Sensitivity = 0,
+    ThirdPerson = false,
+    ThirdPersonSensitivity = 3,
+    TriggerKey = nil,
+    Toggle = false,
+    LockPart = "Head",
     FOVVisible = false,
-    FOVSize = 100,
+    FOVSize = 90,
+    FOVColor = Color3fromRGB(255, 255, 255),
+    FOVLockColor = Color3fromRGB(255, 70, 70),
     FOVTransparency = 0.5,
     FOVThickness = 1,
-    FOVColor = Color3.fromRGB(255, 255, 255),
-    FOVLockColor = Color3.fromRGB(255, 0, 0)
+    FOVSides = 60,
+    FOVFilled = false
 }
 
-local function ConvertVector(vector)
-    return Vector2.new(vector.X, vector.Y)
+local function ConvertVector(Vector)
+    return Vector2new(Vector.X, Vector.Y)
 end
 
 local function CancelLock()
     LockedPlayer = nil
-    if AimModule.Settings.FOVVisible then
-        FOVCircle.Color = AimModule.Settings.FOVColor
+    FOVCircle.Color = AimModule.Settings.FOVColor
+    UserInputService.MouseDeltaSensitivity = OriginalSensitivity
+
+    if Animation then
+        Animation:Cancel()
     end
 end
 
 local function GetClosestPlayer()
     if not LockedPlayer then
-        local RequiredDistance = AimModule.Settings.FOVSize
+        RequiredDistance = AimModule.Settings.FOVSize
 
-        for _, v in pairs(Players:GetPlayers()) do
-            if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild(AimModule.Settings.AimPart) and v.Character:FindFirstChildOfClass("Humanoid") then
+        for _, v in next, Players:GetPlayers() do
+            if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild(AimModule.Settings.LockPart) and v.Character:FindFirstChildOfClass("Humanoid") then
                 if AimModule.Settings.TeamCheck and v.Team == LocalPlayer.Team then continue end
                 if AimModule.Settings.AliveCheck and v.Character:FindFirstChildOfClass("Humanoid").Health <= 0 then continue end
-                if AimModule.Settings.WallCheck and #(Camera:GetPartsObscuringTarget({v.Character[AimModule.Settings.AimPart].Position}, v.Character:GetDescendants())) > 0 then continue end
+                if AimModule.Settings.WallCheck and #(Camera:GetPartsObscuringTarget({v.Character[AimModule.Settings.LockPart].Position}, v.Character:GetDescendants())) > 0 then continue end
 
-                local Vector, OnScreen = Camera:WorldToViewportPoint(v.Character[AimModule.Settings.AimPart].Position)
+                local Vector, OnScreen = Camera:WorldToViewportPoint(v.Character[AimModule.Settings.LockPart].Position)
                 Vector = ConvertVector(Vector)
                 local Distance = (UserInputService:GetMouseLocation() - Vector).Magnitude
 
@@ -66,151 +70,128 @@ local function GetClosestPlayer()
                 end
             end
         end
-        
-        if LockedPlayer and AimModule.Settings.FOVVisible then
-            FOVCircle.Color = AimModule.Settings.FOVLockColor
-        end
-    else
-        if not LockedPlayer.Character or not LockedPlayer.Character:FindFirstChild(AimModule.Settings.AimPart) or not LockedPlayer.Character:FindFirstChildOfClass("Humanoid") or LockedPlayer.Character:FindFirstChildOfClass("Humanoid").Health <= 0 then
-            CancelLock()
-            return
-        end
-        
-        local Vector, OnScreen = Camera:WorldToViewportPoint(LockedPlayer.Character[AimModule.Settings.AimPart].Position)
-        Vector = ConvertVector(Vector)
-        local Distance = (UserInputService:GetMouseLocation() - Vector).Magnitude
-        
-        if Distance > AimModule.Settings.FOVSize or not OnScreen then
+    elseif LockedPlayer and LockedPlayer.Character and LockedPlayer.Character:FindFirstChild(AimModule.Settings.LockPart) then
+        local Distance = (UserInputService:GetMouseLocation() - ConvertVector(Camera:WorldToViewportPoint(LockedPlayer.Character[AimModule.Settings.LockPart].Position))).Magnitude
+        if Distance > RequiredDistance then
             CancelLock()
         end
-    end
-end
-
-local function UpdateAimbot()
-    if not AimModule.Settings.Enabled or not IsBindActive or not LockedPlayer then 
-        return 
-    end
-    
-    local character = LockedPlayer.Character
-    if not character or not character:FindFirstChild(AimModule.Settings.AimPart) then
-        CancelLock()
-        return
-    end
-    
-    local targetPart = character[AimModule.Settings.AimPart]
-    local targetPosition = targetPart.Position
-    
-    local cameraCFrame = Camera.CFrame
-    local cameraPosition = cameraCFrame.Position
-    
-    local targetCFrame = CFrame.new(cameraPosition, targetPosition)
-    
-    local smoothness = AimModule.Settings.Smoothness
-    if smoothness == 0 then
-        Camera.CFrame = targetCFrame
     else
-        Camera.CFrame = cameraCFrame:Lerp(targetCFrame, 1 / smoothness)
-    end
-end
-
-local function UpdateFOV()
-    if not AimModule.Settings.FOVVisible then
-        FOVCircle.Visible = false
-        return
-    end
-    
-    local mouseLocation = UserInputService:GetMouseLocation()
-    FOVCircle.Position = mouseLocation
-    FOVCircle.Radius = AimModule.Settings.FOVSize
-    FOVCircle.Transparency = AimModule.Settings.FOVTransparency
-    FOVCircle.Thickness = AimModule.Settings.FOVThickness
-    FOVCircle.Visible = true
-    
-    if not LockedPlayer then
-        FOVCircle.Color = AimModule.Settings.FOVColor
-    else
-        FOVCircle.Color = AimModule.Settings.FOVLockColor
-    end
-end
-
-local function OnInputBegan(input, gameProcessed)
-    if gameProcessed or not AimModule.Settings.Enabled or not AimModule.Settings.ActivateBind then return end
-    
-    local isCorrectInput = false
-    
-    if AimModule.Settings.ActivateBind == Enum.UserInputType.MouseButton2 then
-        if input.UserInputType == Enum.UserInputType.MouseButton2 then
-            isCorrectInput = true
-        end
-    elseif input.KeyCode == AimModule.Settings.ActivateBind then
-        isCorrectInput = true
-    end
-    
-    if isCorrectInput then
-        IsBindActive = true
-        GetClosestPlayer()
-    end
-end
-
-local function OnInputEnded(input, gameProcessed)
-    if not AimModule.Settings.ActivateBind then return end
-    
-    local isCorrectInput = false
-    
-    if AimModule.Settings.ActivateBind == Enum.UserInputType.MouseButton2 then
-        if input.UserInputType == Enum.UserInputType.MouseButton2 then
-            isCorrectInput = true
-        end
-    elseif input.KeyCode == AimModule.Settings.ActivateBind then
-        isCorrectInput = true
-    end
-    
-    if isCorrectInput then
-        IsBindActive = false
         CancelLock()
     end
+end
+
+local function OnInputBegan(Input)
+    if Typing or not AimModule.Settings.Enabled or not AimModule.Settings.TriggerKey then return end
+    
+    pcall(function()
+        local isCorrectInput = false
+        
+        if AimModule.Settings.TriggerKey == Enum.UserInputType.MouseButton2 then
+            if Input.UserInputType == Enum.UserInputType.MouseButton2 then
+                isCorrectInput = true
+            end
+        elseif type(AimModule.Settings.TriggerKey) == "EnumItem" and Input.KeyCode == AimModule.Settings.TriggerKey then
+            isCorrectInput = true
+        end
+        
+        if isCorrectInput then
+            if AimModule.Settings.Toggle then
+                Running = not Running
+                if not Running then
+                    CancelLock()
+                end
+            else
+                Running = true
+            end
+        end
+    end)
+end
+
+local function OnInputEnded(Input)
+    if Typing or not AimModule.Settings.TriggerKey or AimModule.Settings.Toggle then return end
+    
+    pcall(function()
+        local isCorrectInput = false
+        
+        if AimModule.Settings.TriggerKey == Enum.UserInputType.MouseButton2 then
+            if Input.UserInputType == Enum.UserInputType.MouseButton2 then
+                isCorrectInput = true
+            end
+        elseif type(AimModule.Settings.TriggerKey) == "EnumItem" and Input.KeyCode == AimModule.Settings.TriggerKey then
+            isCorrectInput = true
+        end
+        
+        if isCorrectInput then
+            Running = false
+            CancelLock()
+        end
+    end)
 end
 
 function AimModule:Start()
-    if AimbotConnection then return end
+    if ServiceConnections.RenderSteppedConnection then return end
     
-    AimbotConnection = RunService.RenderStepped:Connect(function()
-        if AimModule.Settings.Enabled and IsBindActive then
+    OriginalSensitivity = UserInputService.MouseDeltaSensitivity
+    
+    ServiceConnections.RenderSteppedConnection = RunService.RenderStepped:Connect(function()
+        if AimModule.Settings.FOVVisible and AimModule.Settings.Enabled then
+            FOVCircle.Radius = AimModule.Settings.FOVSize
+            FOVCircle.Thickness = AimModule.Settings.FOVThickness
+            FOVCircle.Filled = AimModule.Settings.FOVFilled
+            FOVCircle.NumSides = AimModule.Settings.FOVSides
+            FOVCircle.Color = AimModule.Settings.FOVColor
+            FOVCircle.Transparency = AimModule.Settings.FOVTransparency
+            FOVCircle.Visible = true
+            FOVCircle.Position = Vector2new(UserInputService:GetMouseLocation().X, UserInputService:GetMouseLocation().Y)
+        else
+            FOVCircle.Visible = false
+        end
+
+        if Running and AimModule.Settings.Enabled then
             GetClosestPlayer()
-            UpdateAimbot()
+
+            if LockedPlayer and LockedPlayer.Character and LockedPlayer.Character:FindFirstChild(AimModule.Settings.LockPart) then
+                if AimModule.Settings.ThirdPerson then
+                    local Vector = Camera:WorldToViewportPoint(LockedPlayer.Character[AimModule.Settings.LockPart].Position)
+                    mousemoverel((Vector.X - UserInputService:GetMouseLocation().X) * AimModule.Settings.ThirdPersonSensitivity, (Vector.Y - UserInputService:GetMouseLocation().Y) * AimModule.Settings.ThirdPersonSensitivity)
+                else
+                    if AimModule.Settings.Sensitivity > 0 then
+                        Animation = TweenService:Create(Camera, TweenInfonew(AimModule.Settings.Sensitivity, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {CFrame = CFramenew(Camera.CFrame.Position, LockedPlayer.Character[AimModule.Settings.LockPart].Position)})
+                        Animation:Play()
+                    else
+                        Camera.CFrame = CFramenew(Camera.CFrame.Position, LockedPlayer.Character[AimModule.Settings.LockPart].Position)
+                    end
+
+                    UserInputService.MouseDeltaSensitivity = 0
+                end
+
+                FOVCircle.Color = AimModule.Settings.FOVLockColor
+            end
         end
     end)
+
+    ServiceConnections.InputBeganConnection = UserInputService.InputBegan:Connect(OnInputBegan)
+    ServiceConnections.InputEndedConnection = UserInputService.InputEnded:Connect(OnInputEnded)
     
-    FOVUpdateConnection = RunService.RenderStepped:Connect(function()
-        UpdateFOV()
+    ServiceConnections.TypingStartedConnection = UserInputService.TextBoxFocused:Connect(function()
+        Typing = true
     end)
-    
-    UserInputService.InputBegan:Connect(OnInputBegan)
-    UserInputService.InputEnded:Connect(OnInputEnded)
+
+    ServiceConnections.TypingEndedConnection = UserInputService.TextBoxFocusReleased:Connect(function()
+        Typing = false
+    end)
 end
 
 function AimModule:Stop()
-    if AimbotConnection then
-        AimbotConnection:Disconnect()
-        AimbotConnection = nil
+    for _, v in next, ServiceConnections do
+        v:Disconnect()
     end
     
-    if FOVUpdateConnection then
-        FOVUpdateConnection:Disconnect()
-        FOVUpdateConnection = nil
-    end
+    ServiceConnections = {}
     
-    IsBindActive = false
-    CancelLock()
     FOVCircle.Visible = false
-end
-
-function AimModule:UpdateSettings(settings)
-    for key, value in pairs(settings) do
-        if AimModule.Settings[key] ~= nil then
-            AimModule.Settings[key] = value
-        end
-    end
+    Running = false
+    CancelLock()
 end
 
 return AimModule
