@@ -16,7 +16,7 @@ AimbotModule.Settings = {
     WallCheck = false,
     LockPart = "Head",
     Sensitivity = 0,
-    TriggerKey = Enum.KeyCode.MouseButton2,
+    TriggerKey = Enum.KeyCode.Q,
     FOVVisible = false,
     FOVSize = 90,
     FOVTransparency = 0.5,
@@ -126,17 +126,13 @@ function AimbotModule:Stop()
 end
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
-    if input.UserInputType == Enum.UserInputType.MouseButton2 then
-        Aiming = true
-    elseif input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == AimbotModule.Settings.TriggerKey then
+    if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == AimbotModule.Settings.TriggerKey then
         Aiming = true
     end
 end)
 UserInputService.InputEnded:Connect(function(input, gameProcessed)
     if gameProcessed then return end
-    if input.UserInputType == Enum.UserInputType.MouseButton2 then
-        Aiming = false
-    elseif input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == AimbotModule.Settings.TriggerKey then
+    if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == AimbotModule.Settings.TriggerKey then
         Aiming = false
     end
 end)
