@@ -102,12 +102,16 @@ local function OnInputBegan(Input, GameProcessed)
     
     local isCorrectInput = false
     
-    if AimModule.Settings.TriggerKey == Enum.UserInputType.MouseButton2 then
-        if Input.UserInputType == Enum.UserInputType.MouseButton2 then
-            isCorrectInput = true
+    if typeof(AimModule.Settings.TriggerKey) == "EnumItem" then
+        if AimModule.Settings.TriggerKey.EnumType == Enum.KeyCode then
+            if Input.KeyCode == AimModule.Settings.TriggerKey then
+                isCorrectInput = true
+            end
+        elseif AimModule.Settings.TriggerKey.EnumType == Enum.UserInputType then
+            if Input.UserInputType == AimModule.Settings.TriggerKey then
+                isCorrectInput = true
+            end
         end
-    elseif Input.KeyCode == AimModule.Settings.TriggerKey then
-        isCorrectInput = true
     end
     
     if isCorrectInput then
@@ -127,12 +131,16 @@ local function OnInputEnded(Input, GameProcessed)
     
     local isCorrectInput = false
     
-    if AimModule.Settings.TriggerKey == Enum.UserInputType.MouseButton2 then
-        if Input.UserInputType == Enum.UserInputType.MouseButton2 then
-            isCorrectInput = true
+    if typeof(AimModule.Settings.TriggerKey) == "EnumItem" then
+        if AimModule.Settings.TriggerKey.EnumType == Enum.KeyCode then
+            if Input.KeyCode == AimModule.Settings.TriggerKey then
+                isCorrectInput = true
+            end
+        elseif AimModule.Settings.TriggerKey.EnumType == Enum.UserInputType then
+            if Input.UserInputType == AimModule.Settings.TriggerKey then
+                isCorrectInput = true
+            end
         end
-    elseif Input.KeyCode == AimModule.Settings.TriggerKey then
-        isCorrectInput = true
     end
     
     if isCorrectInput then
