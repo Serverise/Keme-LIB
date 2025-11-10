@@ -9,7 +9,7 @@ local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
-local RequiredDistance, Typing, Running, ServiceConnections, Animation, OriginalSensitivity = 2000, false, false, {}, nil, nil
+local Typing, Running, ServiceConnections, Animation, OriginalSensitivity = false, false, {}, nil, nil
 local LockedPlayer = nil
 
 local FOVCircle = Drawingnew("Circle")
@@ -60,13 +60,22 @@ end
 
 local function GetClosestPlayer()
     if not LockedPlayer then
-        RequiredDistance = AimModule.Settings.FOVSize
+        local RequiredDistance = AimModule.Settings.FOVSize
+        local ClosestPlayer = nil
 
         for _, v in next, Players:GetPlayers() do
             if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild(AimModule.Settings.LockPart) and v.Character:FindFirstChildOfClass("Humanoid") then
                 if AimModule.Settings.TeamCheck and v.Team == LocalPlayer.Team then continue end
                 if AimModule.Settings.AliveCheck and v.Character:FindFirstChildOfClass("Humanoid").Health <= 0 then continue end
-                if AimModule.Settings.WallCheck and #(Camera:GetPartsObscuringTarget({v.Character[AimModule.Settings.LockPart].Position}, v.Character:GetDescendants())) > 0 then continue end
+                if AimModule.Settings.WallCheck then
+                    local rayParams = RaycastParams.new()
+                    rayParams.FilterDescendantsInstances = {LocalPlayer.Character, v.Character}
+                    rayParams.FilterType = Enum.RaycastFilterType.Blacklist
+                    local origin = Camera.CFrame.Position
+                    local direction = (v.Character[AimModule.Settings.LockPart].Position - origin).Unit * 1000
+                    local rayResult = workspace:Raycast(origin, direction, rayParams)
+                    if rayResult then continue end
+                end
 
                 local Vector, OnScreen = Camera:WorldToViewportPoint(v.Character[AimModule.Settings.LockPart].Position)
                 Vector = ConvertVector(Vector)
@@ -74,10 +83,12 @@ local function GetClosestPlayer()
 
                 if Distance < RequiredDistance and OnScreen then
                     RequiredDistance = Distance
-                    LockedPlayer = v
+                    ClosestPlayer = v
                 end
             end
         end
+        
+        LockedPlayer = ClosestPlayer
     elseif LockedPlayer then
         if not LockedPlayer.Character or not LockedPlayer.Character:FindFirstChild(AimModule.Settings.LockPart) or not LockedPlayer.Character:FindFirstChildOfClass("Humanoid") or LockedPlayer.Character:FindFirstChildOfClass("Humanoid").Health <= 0 then
             CancelLock()
@@ -91,7 +102,7 @@ local function GetClosestPlayer()
         end
         
         local Distance = (UserInputService:GetMouseLocation() - ConvertVector(Vector)).Magnitude
-        if Distance > RequiredDistance then
+        if Distance > AimModule.Settings.FOVSize then
             CancelLock()
         end
     end
@@ -184,6 +195,9 @@ function AimModule:Start()
                     end
                 else
                     if AimModule.Settings.Sensitivity > 0 then
+                        if Animation then
+                            Animation:Cancel()
+                        end
                         Animation = TweenService:Create(Camera, TweenInfonew(AimModule.Settings.Sensitivity, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {CFrame = CFramenew(Camera.CFrame.Position, LockedPlayer.Character[AimModule.Settings.LockPart].Position)})
                         Animation:Play()
                     else
