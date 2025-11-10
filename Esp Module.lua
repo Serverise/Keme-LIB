@@ -231,6 +231,13 @@ local function GetTracerOrigin()
     end
 end
 
+local function ShouldShowPlayer(player)
+    if ESPModule.Settings.TeamCheck and player.Team == LocalPlayer.Team and not ESPModule.Settings.ShowTeam then
+        return false
+    end
+    return true
+end
+
 local function UpdateESP(player)
     if not ESPModule.Settings.Enabled then return end
     
@@ -317,7 +324,7 @@ local function UpdateESP(player)
         return
     end
     
-    if ESPModule.Settings.TeamCheck and player.Team == LocalPlayer.Team and not ESPModule.Settings.ShowTeam then
+    if not ShouldShowPlayer(player) then
         for _, obj in pairs(esp.Box) do obj.Visible = false end
         esp.Tracer.Visible = false
         for _, obj in pairs(esp.HealthBar) do obj.Visible = false end
@@ -539,7 +546,9 @@ local function UpdateESP(player)
     
     local highlights = Highlights[player]
     if highlights then
-        if ESPModule.Settings.InvisibleChamsEnabled and character then
+        local showChams = ShouldShowPlayer(player)
+        
+        if ESPModule.Settings.InvisibleChamsEnabled and character and showChams then
             highlights.Invisible.Parent = character
             highlights.Invisible.FillColor = ESPModule.Settings.InvisibleChamsColor
             highlights.Invisible.FillTransparency = ESPModule.Settings.ChamsTransparency
@@ -549,7 +558,7 @@ local function UpdateESP(player)
             highlights.Invisible.Enabled = false
         end
         
-        if ESPModule.Settings.VisibleChamsEnabled and character then
+        if ESPModule.Settings.VisibleChamsEnabled and character and showChams then
             highlights.Visible.Parent = character
             highlights.Visible.FillColor = ESPModule.Settings.VisibleChamsColor
             highlights.Visible.FillTransparency = ESPModule.Settings.ChamsTransparency
