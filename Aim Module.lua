@@ -17,7 +17,7 @@ FOVCircle.NumSides = 64
 local LockedPlayer = nil
 local AimbotConnection = nil
 local FOVUpdateConnection = nil
-local ActivateConnection = nil
+local IsBindActive = false
 
 AimModule.Settings = {
     Enabled = false,
@@ -87,7 +87,9 @@ local function GetClosestPlayer()
 end
 
 local function UpdateAimbot()
-    if not AimModule.Settings.Enabled or not LockedPlayer then return end
+    if not AimModule.Settings.Enabled or not IsBindActive or not LockedPlayer then 
+        return 
+    end
     
     local character = LockedPlayer.Character
     if not character or not character:FindFirstChild(AimModule.Settings.AimPart) then
@@ -96,18 +98,18 @@ local function UpdateAimbot()
     end
     
     local targetPart = character[AimModule.Settings.AimPart]
-    local targetPosition = Camera:WorldToViewportPoint(targetPart.Position)
+    local targetPosition = targetPart.Position
     
-    if targetPosition.Z > 0 then
-        local mouseLocation = UserInputService:GetMouseLocation()
-        local targetVector = Vector2.new(targetPosition.X, targetPosition.Y)
-        
-        local smoothness = AimModule.Settings.Smoothness
-        if smoothness == 0 then
-            mousemoverel((targetVector.X - mouseLocation.X), (targetVector.Y - mouseLocation.Y))
-        else
-            mousemoverel((targetVector.X - mouseLocation.X) / smoothness, (targetVector.Y - mouseLocation.Y) / smoothness)
-        end
+    local cameraCFrame = Camera.CFrame
+    local cameraPosition = cameraCFrame.Position
+    
+    local targetCFrame = CFrame.new(cameraPosition, targetPosition)
+    
+    local smoothness = AimModule.Settings.Smoothness
+    if smoothness == 0 then
+        Camera.CFrame = targetCFrame
+    else
+        Camera.CFrame = cameraCFrame:Lerp(targetCFrame, 1 / smoothness)
     end
 end
 
@@ -131,11 +133,49 @@ local function UpdateFOV()
     end
 end
 
+local function OnInputBegan(input, gameProcessed)
+    if gameProcessed or not AimModule.Settings.Enabled or not AimModule.Settings.ActivateBind then return end
+    
+    local isCorrectInput = false
+    
+    if AimModule.Settings.ActivateBind == Enum.UserInputType.MouseButton2 then
+        if input.UserInputType == Enum.UserInputType.MouseButton2 then
+            isCorrectInput = true
+        end
+    elseif input.KeyCode == AimModule.Settings.ActivateBind then
+        isCorrectInput = true
+    end
+    
+    if isCorrectInput then
+        IsBindActive = true
+        GetClosestPlayer()
+    end
+end
+
+local function OnInputEnded(input, gameProcessed)
+    if not AimModule.Settings.ActivateBind then return end
+    
+    local isCorrectInput = false
+    
+    if AimModule.Settings.ActivateBind == Enum.UserInputType.MouseButton2 then
+        if input.UserInputType == Enum.UserInputType.MouseButton2 then
+            isCorrectInput = true
+        end
+    elseif input.KeyCode == AimModule.Settings.ActivateBind then
+        isCorrectInput = true
+    end
+    
+    if isCorrectInput then
+        IsBindActive = false
+        CancelLock()
+    end
+end
+
 function AimModule:Start()
     if AimbotConnection then return end
     
     AimbotConnection = RunService.RenderStepped:Connect(function()
-        if AimModule.Settings.Enabled then
+        if AimModule.Settings.Enabled and IsBindActive then
             GetClosestPlayer()
             UpdateAimbot()
         end
@@ -145,23 +185,8 @@ function AimModule:Start()
         UpdateFOV()
     end)
     
-    if AimModule.Settings.ActivateBind then
-        ActivateConnection = UserInputService.InputBegan:Connect(function(input, gameProcessed)
-            if gameProcessed then return end
-            
-            if input.KeyCode == AimModule.Settings.ActivateBind or input.UserInputType == AimModule.Settings.ActivateBind then
-                if AimModule.Settings.Enabled then
-                    GetClosestPlayer()
-                end
-            end
-        end)
-        
-        UserInputService.InputEnded:Connect(function(input, gameProcessed)
-            if input.KeyCode == AimModule.Settings.ActivateBind or input.UserInputType == AimModule.Settings.ActivateBind then
-                CancelLock()
-            end
-        end)
-    end
+    UserInputService.InputBegan:Connect(OnInputBegan)
+    UserInputService.InputEnded:Connect(OnInputEnded)
 end
 
 function AimModule:Stop()
@@ -175,11 +200,7 @@ function AimModule:Stop()
         FOVUpdateConnection = nil
     end
     
-    if ActivateConnection then
-        ActivateConnection:Disconnect()
-        ActivateConnection = nil
-    end
-    
+    IsBindActive = false
     CancelLock()
     FOVCircle.Visible = false
 end
