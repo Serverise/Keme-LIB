@@ -119,21 +119,21 @@ local function CreateESP(player)
     snapline.Thickness = 1
     
     local invisibleHighlight = Instance.new("Highlight")
-    invisibleHighlight.Name = "InvisibleChams"
+    invisibleHighlight.Name = "InvisibleChams_" .. player.Name
     invisibleHighlight.FillColor = ESPModule.Settings.InvisibleChamsColor
     invisibleHighlight.OutlineColor = Color3.fromRGB(0, 0, 0)
     invisibleHighlight.FillTransparency = ESPModule.Settings.ChamsTransparency
     invisibleHighlight.OutlineTransparency = 1
-    invisibleHighlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+    invisibleHighlight.DepthMode = Enum.HighlightDepthMode.Occluded
     invisibleHighlight.Enabled = false
     
     local visibleHighlight = Instance.new("Highlight")
-    visibleHighlight.Name = "VisibleChams"
+    visibleHighlight.Name = "VisibleChams_" .. player.Name
     visibleHighlight.FillColor = ESPModule.Settings.VisibleChamsColor
     visibleHighlight.OutlineColor = Color3.fromRGB(0, 0, 0)
     visibleHighlight.FillTransparency = ESPModule.Settings.ChamsTransparency
     visibleHighlight.OutlineTransparency = 1
-    visibleHighlight.DepthMode = Enum.HighlightDepthMode.Occluded
+    visibleHighlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
     visibleHighlight.Enabled = false
     
     Highlights[player] = {
@@ -549,7 +549,9 @@ local function UpdateESP(player)
         local showChams = ShouldShowPlayer(player)
         
         if ESPModule.Settings.InvisibleChamsEnabled and character and showChams then
-            highlights.Invisible.Parent = character
+            if highlights.Invisible.Parent ~= character then
+                highlights.Invisible.Parent = character
+            end
             highlights.Invisible.FillColor = ESPModule.Settings.InvisibleChamsColor
             highlights.Invisible.FillTransparency = ESPModule.Settings.ChamsTransparency
             highlights.Invisible.OutlineTransparency = ESPModule.Settings.ChamsOutlineTransparency
@@ -559,7 +561,9 @@ local function UpdateESP(player)
         end
         
         if ESPModule.Settings.VisibleChamsEnabled and character and showChams then
-            highlights.Visible.Parent = character
+            if highlights.Visible.Parent ~= character then
+                highlights.Visible.Parent = character
+            end
             highlights.Visible.FillColor = ESPModule.Settings.VisibleChamsColor
             highlights.Visible.FillTransparency = ESPModule.Settings.ChamsTransparency
             highlights.Visible.OutlineTransparency = ESPModule.Settings.ChamsOutlineTransparency
@@ -677,6 +681,12 @@ local function DisableESP()
             for _, line in pairs(skeleton) do
                 line.Visible = false
             end
+        end
+        
+        local highlights = Highlights[player]
+        if highlights then
+            highlights.Invisible.Enabled = false
+            highlights.Visible.Enabled = false
         end
     end
 end
