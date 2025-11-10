@@ -119,18 +119,20 @@ local function CreateESP(player)
     snapline.Thickness = 1
     
     local invisibleHighlight = Instance.new("Highlight")
+    invisibleHighlight.Name = "InvisibleChams"
     invisibleHighlight.FillColor = ESPModule.Settings.InvisibleChamsColor
     invisibleHighlight.OutlineColor = Color3.fromRGB(0, 0, 0)
     invisibleHighlight.FillTransparency = ESPModule.Settings.ChamsTransparency
-    invisibleHighlight.OutlineTransparency = ESPModule.Settings.ChamsOutlineTransparency
+    invisibleHighlight.OutlineTransparency = 1
     invisibleHighlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
     invisibleHighlight.Enabled = false
     
     local visibleHighlight = Instance.new("Highlight")
+    visibleHighlight.Name = "VisibleChams"
     visibleHighlight.FillColor = ESPModule.Settings.VisibleChamsColor
     visibleHighlight.OutlineColor = Color3.fromRGB(0, 0, 0)
     visibleHighlight.FillTransparency = ESPModule.Settings.ChamsTransparency
-    visibleHighlight.OutlineTransparency = ESPModule.Settings.ChamsOutlineTransparency
+    visibleHighlight.OutlineTransparency = 1
     visibleHighlight.DepthMode = Enum.HighlightDepthMode.Occluded
     visibleHighlight.Enabled = false
     
