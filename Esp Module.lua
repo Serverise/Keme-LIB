@@ -46,9 +46,10 @@ ESPModule.Settings = {
     RainbowBoxes = false,
     RainbowTracers = false,
     RainbowText = false,
-    ChamsEnabled = false,
-    ChamsOutlineColor = Color3.fromRGB(255, 255, 255),
-    ChamsFillColor = Color3.fromRGB(255, 0, 0),
+    InvisibleChamsEnabled = false,
+    VisibleChamsEnabled = false,
+    InvisibleChamsColor = Color3.fromRGB(255, 0, 0),
+    VisibleChamsColor = Color3.fromRGB(0, 255, 0),
     ChamsTransparency = 0.5,
     ChamsOutlineTransparency = 0,
     SkeletonESP = false,
@@ -117,15 +118,26 @@ local function CreateESP(player)
     snapline.Color = Colors.Enemy
     snapline.Thickness = 1
     
-    local highlight = Instance.new("Highlight")
-    highlight.FillColor = ESPModule.Settings.ChamsFillColor
-    highlight.OutlineColor = ESPModule.Settings.ChamsOutlineColor
-    highlight.FillTransparency = ESPModule.Settings.ChamsTransparency
-    highlight.OutlineTransparency = ESPModule.Settings.ChamsOutlineTransparency
-    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-    highlight.Enabled = ESPModule.Settings.ChamsEnabled
+    local invisibleHighlight = Instance.new("Highlight")
+    invisibleHighlight.FillColor = ESPModule.Settings.InvisibleChamsColor
+    invisibleHighlight.OutlineColor = Color3.fromRGB(0, 0, 0)
+    invisibleHighlight.FillTransparency = ESPModule.Settings.ChamsTransparency
+    invisibleHighlight.OutlineTransparency = ESPModule.Settings.ChamsOutlineTransparency
+    invisibleHighlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+    invisibleHighlight.Enabled = false
     
-    Highlights[player] = highlight
+    local visibleHighlight = Instance.new("Highlight")
+    visibleHighlight.FillColor = ESPModule.Settings.VisibleChamsColor
+    visibleHighlight.OutlineColor = Color3.fromRGB(0, 0, 0)
+    visibleHighlight.FillTransparency = ESPModule.Settings.ChamsTransparency
+    visibleHighlight.OutlineTransparency = ESPModule.Settings.ChamsOutlineTransparency
+    visibleHighlight.DepthMode = Enum.HighlightDepthMode.Occluded
+    visibleHighlight.Enabled = false
+    
+    Highlights[player] = {
+        Invisible = invisibleHighlight,
+        Visible = visibleHighlight
+    }
     
     local skeleton = {
         Head = Drawing.new("Line"),
@@ -179,9 +191,10 @@ local function RemoveESP(player)
         Drawings.ESP[player] = nil
     end
     
-    local highlight = Highlights[player]
-    if highlight then
-        highlight:Destroy()
+    local highlights = Highlights[player]
+    if highlights then
+        highlights.Invisible:Destroy()
+        highlights.Visible:Destroy()
         Highlights[player] = nil
     end
     
@@ -522,17 +535,26 @@ local function UpdateESP(player)
         esp.Snapline.Visible = false
     end
     
-    local highlight = Highlights[player]
-    if highlight then
-        if ESPModule.Settings.ChamsEnabled and character then
-            highlight.Parent = character
-            highlight.FillColor = ESPModule.Settings.ChamsFillColor
-            highlight.OutlineColor = ESPModule.Settings.ChamsOutlineColor
-            highlight.FillTransparency = ESPModule.Settings.ChamsTransparency
-            highlight.OutlineTransparency = ESPModule.Settings.ChamsOutlineTransparency
-            highlight.Enabled = true
+    local highlights = Highlights[player]
+    if highlights then
+        if ESPModule.Settings.InvisibleChamsEnabled and character then
+            highlights.Invisible.Parent = character
+            highlights.Invisible.FillColor = ESPModule.Settings.InvisibleChamsColor
+            highlights.Invisible.FillTransparency = ESPModule.Settings.ChamsTransparency
+            highlights.Invisible.OutlineTransparency = ESPModule.Settings.ChamsOutlineTransparency
+            highlights.Invisible.Enabled = true
         else
-            highlight.Enabled = false
+            highlights.Invisible.Enabled = false
+        end
+        
+        if ESPModule.Settings.VisibleChamsEnabled and character then
+            highlights.Visible.Parent = character
+            highlights.Visible.FillColor = ESPModule.Settings.VisibleChamsColor
+            highlights.Visible.FillTransparency = ESPModule.Settings.ChamsTransparency
+            highlights.Visible.OutlineTransparency = ESPModule.Settings.ChamsOutlineTransparency
+            highlights.Visible.Enabled = true
+        else
+            highlights.Visible.Enabled = false
         end
     end
     
